@@ -1,0 +1,561 @@
+<?php
+/**
+ * @file
+ * Code for the OS2Intra User import feature.
+ */
+
+include_once 'os2intra_user_import.features.inc';
+/**
+ *
+ * @author Thomas Thune Hansen <tth@bellcom.dk>
+ * @copyright bellcom open source aps
+ */
+
+/**
+ * Implements hook_menu()
+ */
+function os2intra_user_import_menu(){
+  $items = array();
+
+  $items['admin/config/os2intra/user_import'] = array(
+    'title' => t('OS2Intra User import'),
+    'description' => t('Administer user import'),
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer os2intra user import'),
+    'file path' => drupal_get_path('module', 'system'),
+    'file' => 'system.admin.inc',
+    'weight' => -5,
+  );
+
+  $items['admin/config/os2intra/user_import/settings'] = array(
+    'title' => t('Settings'),
+    'description' => t('Administer user import settings'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('os2intra_user_import_settings'),
+    'access arguments' => array('administer os2intra user import'),
+  );
+
+  $items['admin/config/os2intra/user_import/log'] = array(
+    'title' => t('Log'),
+    'description' => t('View user import log'),
+    'page callback' => 'os2intra_user_import_log',
+    'access arguments' => array('administer os2intra user import'),
+  );
+
+  $items['admin/config/os2intra/user_import/overview'] = array(
+    'title' => t('Overview'),
+    'description' => t('See overview of imported users'),
+    'page callback' => 'os2intra_user_import_log',
+    'access arguments' => array('administer os2intra user import'),
+  );
+
+  $items['useractivation'] = array(
+    'title' => t('User activation'),
+    'page callback' => 'os2intra_user_import_activate',
+    'access callback' => array(TRUE),
+  );
+
+  return $items;
+}
+
+function os2intra_user_import_activate_form($form_state){
+  $form['employee_id'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Employee Id'),
+  );
+
+  $form['mail'] = array(
+    '#type' => 'textfield',
+    '#title' => t('E-mail adress'),
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+  );
+
+  return $form;
+}
+
+/**
+ * Implements hook_form_validate()
+ */
+function os2intra_user_import_activate_form_validate($form, &$form_state){
+  // Check if employee id is valid
+  $employee_id = $form_state['values']['employee_id'];
+
+  $query = new EntityFieldQuery;
+  $query->entityCondition('entity_type', 'user');
+  $query->fieldCondition('field_os2intra_employee_id', 'value', $employee_id, '=');
+  $result = array_shift($query->execute());
+
+  if(!$result){
+    form_set_error('employee_id', t('Invalid employee id'));
+  }
+  else {
+    $form_state['uid'] = key($result);
+  }
+
+  // Check if email address is valid
+  if(!valid_email_address($form_state['values']['mail'])){
+    form_set_error('mail', t('Invalid email address'));
+  }
+}
+
+/**
+ * Implements hook_form_submit()
+ */
+function os2intra_user_import_activate_form_submit($form, &$form_state){
+
+  $password = user_password(8);
+
+  $change = array(
+    'mail' => $form_state['values']['mail'],
+    'pass' => $password
+  );
+  $user = user_load($form_state['uid']);
+
+  user_save($user, $change);
+
+  if(_user_mail_notify('register_no_approval_required', $user)){
+    drupal_set_message(t('A mail has been sent to: ') . $form_state['values']['mail']);
+  }
+}
+
+/**
+ * Page callback for user activation
+ */
+function os2intra_user_import_activate(){
+  return drupal_get_form('os2intra_user_import_activate_form');
+}
+
+/**
+ * Implements hook_permission()
+ */
+function os2intra_user_import_permission(){
+ return array(
+    'administer os2intra user import' => array(
+      'title' => t('Administer OS2Intra User import'),
+      'description' => t('Perform administration tasks for user import.'),
+    ),
+  );
+}
+
+/**
+ * Form callback for settings
+ */
+function os2intra_user_import_settings(){
+  $form['placeholder'] = array(
+    '#type' => 'item',
+    '#markup' => t('This module does not provide a cron hook. This has to be set up manually, by adding the import script to the crontab'),
+  );
+
+  $form['os2intra_user_import_enable'] = array(
+    '#title' => t('Enable user import'),
+    '#type' => 'checkbox',
+    '#description' => t(''),
+    '#default_value' => variable_get('os2intra_user_import_enable', TRUE)
+  );
+
+  $form['os2intra_user_import_dir'] = array(
+    '#title' => t('Directory containing CSV with users'),
+    '#type' => 'textfield',
+    '#description' => t('ex. private://user_import'),
+    '#default_value' => variable_get('os2intra_user_import_dir', 'private://user_import')
+  );
+
+  return system_settings_form($form);
+}
+
+/**
+ * Implements hook_form_ID_alter()
+ */
+function os2intra_user_import_form_user_login_alter(&$form, &$form_state, $form_id){
+  // Add link for user activation to login form
+  $form['activate_user'] = array(
+    '#type' => 'item',
+    '#markup' => l(t('Activate user'), 'useractivation'),
+  );
+}
+
+/**
+ * Page callback for log
+ */
+function os2intra_user_import_log(){
+  try {
+    $result = db_select('os2intra_user_import_log', 'l')
+      ->fields('l')
+      ->orderBy('created', 'DESC')
+      ->execute()
+      ->fetchAll();
+  }
+  catch (Exception $e) {
+    $result = array();
+  }
+
+  foreach($result as $row){
+    $rows[] = array($row->message, date('d-m-y H:i:s', $row->created));
+  }
+
+  $header = array(t('Message'), t('Date'));
+
+  return theme('table', array('header' => $header, 'rows' => $rows));
+}
+
+/**
+ * Page callback for overview
+ */
+function os2intra_user_import_overview(){
+  return 'overview';
+}
+
+/**
+ * User import wrapper function
+ */
+function os2intra_user_import_run(){
+  if(variable_get('os2intra_user_import_enable', TRUE)){
+
+    variable_get('os2intra_user_import_dir', 'private://user_import');
+
+    $realpath = '';
+
+    $dir = reset(file_scan_directory('private://user_import', '/.*\.csv$/'));
+    if($dir){
+      $realpath = drupal_realpath($dir->uri);
+    }
+    
+    if(file_exists($realpath)){
+      $file = file_get_contents($realpath);
+
+      os2intra_user_import_save_log('', 'Starting import');
+      $users = os2intra_user_import_process_file($file);
+
+      // Check and create groups
+      os2intra_user_import_groups($users);
+
+      // Check for duplicates
+      $update_users = os2intra_user_import_check_users($users);
+
+
+      os2intra_user_import_save_log('', 'User import');
+      // Loop over users and create
+      foreach($users as $user){
+        os2intra_user_import_save_user($user);
+      }
+
+      // Update users
+      foreach($update_users as $uid => $user){
+        os2intra_user_import_save_user($user, $uid);
+      }
+
+      // Disable users
+      os2intra_user_import_disable_users();
+
+      // Logging
+      os2intra_user_import_save_log('', 'User import finished');
+      os2intra_user_import_save_log('', 'Import finished');
+    }
+  }
+}
+
+/**
+ * Disable users according to termination date
+ */
+function os2intra_user_import_disable_users(){
+  os2intra_user_import_save_log('', 'Start disabling users');
+  $timestamp = strtotime('midnight');
+
+  // Query all users with termination date today.
+  $query = new EntityFieldQuery;
+  $query->entityCondition('entity_type', 'user');
+  $query->fieldCondition('field_os2intra_termination_date', 'value', $timestamp, '=');
+  $query->propertyCondition('status', 1);
+  $result = reset($query->execute());
+
+  // Array holding new status for user
+  $disable_array = array('status' => 0);
+
+  // Disable users
+  if(is_array($result)){
+    foreach($result as $uid => $item){
+      os2intra_user_import_save_log('', 'Disable uid: ' . $uid);
+      user_save(user_load($uid), $disable_array);
+    }
+  }
+  os2intra_user_import_save_log('', 'User disabling finished');
+}
+
+/**
+ * Helper function to parse file contents to array with relevant info
+ */
+function os2intra_user_import_process_file($file){
+  $data = str_getcsv($file, "\n"); //parse the rows 
+
+  // CSV field mapping
+  // rewrite for settings page?
+  $map = array(
+    0 => 'employee_id',
+    1 => 'first_name',
+    2 => 'last_name',
+    3 => 'department',
+    4 => 'job_description',
+    5 => 'job_short_name',
+    6 => 'hire_date',
+    7 => 'termination_date',
+    8 => 'Decentra adm enh',
+    9 => 'Org placering',
+    10 => 'change_date',
+  );
+
+  // Load data from file
+  foreach($data as $row_str){
+    $row = str_getcsv($row_str, ",");
+
+    // Parse mapping
+    foreach($row as $key => $field){
+      $row[$map[$key]] = $field;
+      unset($row[$key]);
+    }
+    $rows[] = $row;
+  }
+
+  unset($rows[0]);
+
+  return $rows;
+}
+
+/**
+ * Check if the user is already created in the system
+ */
+function os2intra_user_import_check_users(&$users){
+  $update_users = array();
+
+  foreach($users as $key => $user){
+    $employee_id = $user['employee_id'];
+
+    $query = new EntityFieldQuery;
+    $query->entityCondition('entity_type', 'user');
+    $query->fieldCondition('field_os2intra_employee_id', 'value', $employee_id, '=');
+    $result = $query->execute();
+
+    // Unset users already created
+    if($result){
+      $update_users[key(array_shift($result))] = $user;
+
+      unset($users[$key]);
+    }
+
+    if(!$user['first_name'] || !$user['employee_id']){
+      unset($users[$key]);
+    }
+  }
+
+  return $update_users;
+}
+
+/**
+ * Create user
+ * @param
+ *  user array from file parser
+ */
+function os2intra_user_import_save_user($user, $uid = ''){
+
+  // Get node id for group
+  $query = new EntityFieldQuery;
+  $query->entityCondition('entity_type', 'node');
+  $query->fieldCondition('field_os2intra_department_id', 'value', $user['department'], '=');
+  $result = $query->execute();
+
+  $group_nid = key(array_shift($result));
+
+  // Create unix timestamp for termination date
+  // @todo: check that timestamp is not today
+  $termination_date_timestamp = strtotime($user['termination_date']);
+  if($termination_date_timestamp > 2147483647){
+    $termination_date_timestamp = 1;
+  }
+
+  // User title tid
+  $title_tid = os2intra_user_import_user_title($user['job_description']);
+
+  // Populate fields
+  $fields = array(
+    // Set employee_id
+    'field_os2intra_employee_id' => array(LANGUAGE_NONE => array(0 => array('value' => $user['employee_id']))),
+    // Set group membership
+    'og_user_node' => array(LANGUAGE_NONE => array(array('target_id' => 2),array('target_id' => $group_nid))),
+    // First Name
+    'field_name_first' => array(LANGUAGE_NONE => array(0 => array('value' => $user['first_name']))),
+    // Last Name
+    'field_name_last' => array(LANGUAGE_NONE => array(0 => array('value' => $user['last_name']))),
+    // Job description
+    'field_os2intra_user_titles' => array(LANGUAGE_NONE => array(0 => array('tid' => $title_tid))),
+    // Termination date
+    'field_os2intra_termination_date' => array(LANGUAGE_NONE => array(0 => array('value' => $termination_date_timestamp))),
+    // Activate user
+    'status' => 1,
+  );
+
+  // Handle wether were updating or creating a new user
+  // if were updating we dont generate username and set password
+  if(!is_numeric($uid)){
+    $password = user_password(8);
+
+    // Generate username
+    // Todo: make configurable
+    $cln_first_name = preg_replace('/[^A-Za-z0-9\-]/', '', $user['first_name']);
+    $cln_last_name = preg_replace('/[^A-Za-z0-9\-]/', '', $user['last_name']);
+    $cln_department = preg_replace('/[^A-Za-z0-9\-]/', '', $user['department']);
+
+    $username = strtolower(substr($cln_department, 0, 3)) . '-';
+    $username .= strtolower(substr($cln_first_name, 0, 3));
+    $username .= strtolower(substr($cln_last_name, 0, 3));
+
+    $users_query = db_query('SELECT u.name FROM {users} u WHERE u.name LIKE :name', array(':name' => $username.'%'));
+    $count = count($users_query->fetchAll());
+
+    if($count){
+      $username .= $count + 1;
+    }
+
+    $fields['name'] = $username;
+    $fields['pass'] = $password;
+  }
+
+  // Save user
+  $account = user_save(user_load($uid), $fields);
+
+  // Write log entry
+  if($uid){
+    os2intra_user_import_save_log($user['employee_id'], 'update user: ' . $user['employee_id'] . ' ' . $user['first_name'] . ' ' . $user['last_name']);
+  }
+  else {
+    os2intra_user_import_save_log($user['employee_id'], 'create user: ' . $user['first_name']);
+  }
+}
+
+/**
+ * Create groups for users
+ *
+ * @param
+ *  array of users with groups
+ */
+function os2intra_user_import_groups($users){
+  os2intra_user_import_save_log('', 'Import groups');
+
+  $groups = array();
+
+  foreach($users as $user){
+    $groups[] = $user['department'];
+  }
+
+  $vocab = taxonomy_vocabulary_machine_name_load('os2intra_organizaiton_tax');
+  $tree = taxonomy_get_tree($vocab->vid);
+
+  // find first term with no parents
+  // used as parent tid later
+  foreach($tree as $term){
+    if($term->parents[0] == 0){
+      $parent_tid = $term->tid;
+      break;
+    }
+  }
+
+  foreach($groups as $group){
+    $query = new EntityFieldQuery;
+    $query->entityCondition('entity_type', 'taxonomy_term');
+    $query->fieldCondition('field_os2intra_department_id', 'value', $group, '=');
+    $result = $query->execute();
+
+    if(!empty($result)){
+      os2intra_user_import_save_log('', 'Group already exits: ' . $group);
+      continue;
+    }
+
+    // Create taxonomy terms
+    os2intra_user_import_save_log('', 'Create group: ' . $group);
+    $term = new stdClass();
+
+    $term->name = $group;
+    $term->parent = array($parent_tid);
+    $term->field_os2intra_department_id[LANGUAGE_NONE][0]['value'] = $group;
+    $term->vid = $vocab->vid;
+
+    taxonomy_term_save($term);
+
+    $tid = $term->tid;
+    // Create group nodes
+
+    $node = new stdClass();
+
+    // Title and type
+    $node->title = $group;
+    $node->type = 'group';
+
+    // Generic node stuff
+    node_object_prepare($node);
+    $node->language = LANGUAGE_NONE;
+    $node->uid = 1;
+    $node->status = 1;
+
+    // Set organization term
+    $node->field_os2intra_organization[LANGUAGE_NONE][0]['tid'] = $tid;
+
+    // Save department id on node
+    $node->field_os2intra_department_id[LANGUAGE_NONE][0]['value'] = $group;
+
+    // Group type "Organisation"
+    // Todo: make more generic
+    $node->field_os2intra_grouptype[LANGUAGE_NONE][0]['tid'] = 6;
+
+    // Closed group, require invitation
+    $node->field_og_subscribe_settings[LANGUAGE_NONE][0]['value'] = 'invitation';
+
+    $node = node_submit($node);
+
+    node_save($node);
+  }
+  os2intra_user_import_save_log('', 'Finished importing groups');
+}
+
+/**
+ * Save log message to db
+ */
+function os2intra_user_import_save_log($uuid, $message){
+  error_log(__FILE__.':'.__LINE__.' '.$message); // tth@bellcom.dk debugging
+  try {
+    db_insert('os2intra_user_import_log')
+      ->fields(array(
+        'uuid' => $uuid,
+        'message' => $message,
+        'created' => time(),
+      ))
+      ->execute();
+
+    return true;
+
+  }
+  catch (PDOException $e ) {
+    return false;
+  }
+}
+
+/**
+ * Helper for user title
+ */
+function os2intra_user_import_user_title($job_description){
+  $term = reset(taxonomy_get_term_by_name($job_description));
+
+  // Create new taxonomy term
+  if(!is_object($term)){
+    $vocab = taxonomy_vocabulary_machine_name_load('bruger_jobtitel');
+    $term = new stdClass();
+
+    $term->name = $job_description;
+    $term->vid = $vocab->vid;
+
+    taxonomy_term_save($term);
+  }
+
+  return $term->tid;
+}
