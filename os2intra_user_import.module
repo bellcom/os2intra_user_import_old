@@ -45,7 +45,8 @@ function os2intra_user_import_menu(){
   $items['admin/config/os2intra/user_import/overview'] = array(
     'title' => 'Overview',
     'description' => 'See overview of imported users',
-    'page callback' => '',
+    // Dummy, the real page is a view display
+    'page callback' => 'os2intra_user_import_log',
     'access arguments' => array('administer os2intra user import'),
   );
 
