@@ -23,6 +23,7 @@ function os2intra_user_import_views_default_views() {
   /* Display: Master */
   $handler = $view->new_display('default', 'Master', 'default');
   $handler->display->display_options['title'] = 'OS2Intra user import';
+  $handler->display->display_options['use_ajax'] = TRUE;
   $handler->display->display_options['use_more_always'] = FALSE;
   $handler->display->display_options['use_more_text'] = 'mere';
   $handler->display->display_options['access']['type'] = 'perm';
@@ -267,10 +268,6 @@ function os2intra_user_import_views_default_views() {
     8 => 0,
     3 => 0,
     6 => 0,
-    9 => 0,
-    10 => 0,
-    11 => 0,
-    12 => 0,
   );
   /* Filterkriterie: Bruger: os2intra_employee_id (field_os2intra_employee_id) */
   $handler->display->display_options['filters']['field_os2intra_employee_id_value_1']['id'] = 'field_os2intra_employee_id_value_1';
@@ -298,8 +295,7 @@ function os2intra_user_import_views_default_views() {
   );
 
   /* Display: Over overview */
-  $handler = $view->new_display('page', 'Over overview', 'page');
-  $handler->display->display_options['path'] = 'admin/config/os2intra/user_import/overview';
+  $handler = $view->new_display('block', 'Over overview', 'block');
   $translatables['os2intra_user_import'] = array(
     t('Master'),
     t('OS2Intra user import'),
