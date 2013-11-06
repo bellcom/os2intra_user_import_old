@@ -23,7 +23,6 @@ function os2intra_user_import_views_default_views() {
   /* Display: Master */
   $handler = $view->new_display('default', 'Master', 'default');
   $handler->display->display_options['title'] = 'OS2Intra user import';
-  $handler->display->display_options['use_ajax'] = TRUE;
   $handler->display->display_options['use_more_always'] = FALSE;
   $handler->display->display_options['use_more_text'] = 'mere';
   $handler->display->display_options['access']['type'] = 'perm';
@@ -47,15 +46,23 @@ function os2intra_user_import_views_default_views() {
   $handler->display->display_options['pager']['options']['tags']['last'] = 'sidste »';
   $handler->display->display_options['style_plugin'] = 'table';
   $handler->display->display_options['style_options']['columns'] = array(
+    'views_bulk_operations' => 'views_bulk_operations',
     'field_os2intra_employee_id' => 'field_os2intra_employee_id',
     'field_name_first' => 'field_name_first',
     'field_name_last' => 'field_name_last',
     'name' => 'name',
     'mail' => 'mail',
     'field_os2intra_termination_date' => 'field_os2intra_termination_date',
+    'login' => 'login',
+    'status' => 'status',
   );
   $handler->display->display_options['style_options']['default'] = '-1';
   $handler->display->display_options['style_options']['info'] = array(
+    'views_bulk_operations' => array(
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
     'field_os2intra_employee_id' => array(
       'sortable' => 1,
       'default_sort_order' => 'asc',
@@ -92,6 +99,20 @@ function os2intra_user_import_views_default_views() {
       'empty_column' => 0,
     ),
     'field_os2intra_termination_date' => array(
+      'sortable' => 1,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+    'login' => array(
+      'sortable' => 1,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+    'status' => array(
       'sortable' => 1,
       'default_sort_order' => 'asc',
       'align' => '',
@@ -232,6 +253,12 @@ function os2intra_user_import_views_default_views() {
     'multiple_from' => '',
     'multiple_to' => '',
   );
+  /* Felt: Bruger: Seneste login */
+  $handler->display->display_options['fields']['login']['id'] = 'login';
+  $handler->display->display_options['fields']['login']['table'] = 'users';
+  $handler->display->display_options['fields']['login']['field'] = 'login';
+  $handler->display->display_options['fields']['login']['empty'] = 'aldrig';
+  $handler->display->display_options['fields']['login']['date_format'] = 'os2web_base_date_only';
   /* Felt: Bruger: Aktiv */
   $handler->display->display_options['fields']['status']['id'] = 'status';
   $handler->display->display_options['fields']['status']['table'] = 'users';
@@ -268,6 +295,10 @@ function os2intra_user_import_views_default_views() {
     8 => 0,
     3 => 0,
     6 => 0,
+    9 => 0,
+    10 => 0,
+    11 => 0,
+    12 => 0,
   );
   /* Filterkriterie: Bruger: os2intra_employee_id (field_os2intra_employee_id) */
   $handler->display->display_options['filters']['field_os2intra_employee_id_value_1']['id'] = 'field_os2intra_employee_id_value_1';
@@ -295,7 +326,8 @@ function os2intra_user_import_views_default_views() {
   );
 
   /* Display: Over overview */
-  $handler = $view->new_display('block', 'Over overview', 'block');
+  $handler = $view->new_display('page', 'Over overview', 'page');
+  $handler->display->display_options['path'] = 'admin/config/os2intra/user_import/overview';
   $translatables['os2intra_user_import'] = array(
     t('Master'),
     t('OS2Intra user import'),
@@ -318,6 +350,8 @@ function os2intra_user_import_views_default_views() {
     t('Efternavn'),
     t('E-mail'),
     t('Fratrædelsesdato'),
+    t('Seneste login'),
+    t('aldrig'),
     t('Aktiv'),
     t('Navn'),
     t('Over overview'),
