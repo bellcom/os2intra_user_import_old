@@ -94,6 +94,11 @@ function os2intra_user_import_activate_form_validate($form, &$form_state){
   }
   else {
     $form_state['uid'] = key($result);
+    $user = user_load($form_state['uid']);
+
+    if($user->mail){
+      form_set_error('employee_id', t('Employee already activated'));
+    }
   }
 
   // Check if email address is valid
