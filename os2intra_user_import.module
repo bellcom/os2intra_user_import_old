@@ -18,8 +18,8 @@ function os2intra_user_import_menu(){
   $items = array();
 
   $items['admin/config/os2intra/user_import'] = array(
-    'title' => t('OS2Intra User import'),
-    'description' => t('Administer user import'),
+    'title' => 'OS2Intra User import',
+    'description' => 'Administer user import',
     'page callback' => 'system_admin_menu_block_page',
     'access arguments' => array('administer os2intra user import'),
     'file path' => drupal_get_path('module', 'system'),
@@ -28,31 +28,31 @@ function os2intra_user_import_menu(){
   );
 
   $items['admin/config/os2intra/user_import/settings'] = array(
-    'title' => t('Settings'),
-    'description' => t('Administer user import settings'),
+    'title' => 'Settings',
+    'description' => 'Administer user import settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('os2intra_user_import_settings'),
     'access arguments' => array('administer os2intra user import'),
   );
 
   $items['admin/config/os2intra/user_import/log'] = array(
-    'title' => t('Log'),
-    'description' => t('View user import log'),
+    'title' => 'Log',
+    'description' => 'View user import log',
     'page callback' => 'os2intra_user_import_log',
     'access arguments' => array('administer os2intra user import'),
   );
 
   $items['admin/config/os2intra/user_import/overview'] = array(
-    'title' => t('Overview'),
-    'description' => t('See overview of imported users'),
-    'page callback' => 'os2intra_user_import_log',
+    'title' => 'Overview',
+    'description' => 'See overview of imported users',
+    'page callback' => '',
     'access arguments' => array('administer os2intra user import'),
   );
 
   $items['useractivation'] = array(
-    'title' => t('User activation'),
+    'title' => 'User activation',
     'page callback' => 'os2intra_user_import_activate',
-    'access callback' => array(TRUE),
+    'access callback' => TRUE,
   );
 
   return $items;
@@ -145,6 +145,8 @@ function os2intra_user_import_permission(){
  * Form callback for settings
  */
 function os2intra_user_import_settings(){
+  $csv_cols = array('none' => t('None'), 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
+
   $form['placeholder'] = array(
     '#type' => 'item',
     '#markup' => t('This module does not provide a cron hook. This has to be set up manually, by adding the import script to the crontab'),
@@ -153,8 +155,7 @@ function os2intra_user_import_settings(){
   $form['os2intra_user_import_enable'] = array(
     '#title' => t('Enable user import'),
     '#type' => 'checkbox',
-    '#description' => t(''),
-    '#default_value' => variable_get('os2intra_user_import_enable', TRUE)
+    '#default_value' => variable_get('os2intra_user_import_enable', FALSE)
   );
 
   $form['os2intra_user_import_dir'] = array(
@@ -164,7 +165,81 @@ function os2intra_user_import_settings(){
     '#default_value' => variable_get('os2intra_user_import_dir', 'private://user_import')
   );
 
+  $form['mapping'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Mapping'),
+    '#collapsible' => FALSE,
+  );
+
+  $form['mapping']['description'] = array(
+    '#type' => 'item',
+    '#markup' => t('Select columns in the CSV file corresponding to the data'),
+  );
+
+  $form['mapping']['os2intra_mapping_first_name'] = array(
+    '#type' => 'select',
+    '#title' => t('Firstname'),
+    '#options' => $csv_cols,
+    '#default_value' => variable_get('os2intra_mapping_first_name'),
+  );
+
+  $form['mapping']['os2intra_mapping_last_name'] = array(
+    '#type' => 'select',
+    '#title' => t('Lastname'),
+    '#options' => $csv_cols,
+    '#default_value' => variable_get('os2intra_mapping_last_name'),
+  );
+
+  $form['mapping']['os2intra_mapping_department'] = array(
+    '#type' => 'select',
+    '#title' => t('Department'),
+    '#options' => $csv_cols,
+    '#default_value' => variable_get('os2intra_mapping_department'),
+  );
+
+  $form['mapping']['os2intra_mapping_employee_id'] = array(
+    '#type' => 'select',
+    '#title' => t('Employee id'),
+    '#options' => $csv_cols,
+    '#default_value' => variable_get('os2intra_mapping_employee_id'),
+  );
+
+  $form['mapping']['os2intra_mapping_job_description'] = array(
+    '#type' => 'select',
+    '#title' => t('Job description'),
+    '#options' => $csv_cols,
+    '#default_value' => variable_get('os2intra_mapping_job_description'),
+  );
+
+  $form['mapping']['os2intra_mapping_termination_date'] = array(
+    '#type' => 'select',
+    '#title' => t('Termination date'),
+    '#options' => $csv_cols,
+    '#default_value' => variable_get('os2intra_mapping_termination_date'),
+  );
+
   return system_settings_form($form);
+}
+
+/**
+ * Implements hook_form_validate()
+ */
+function os2intra_user_import_settings_validate(&$form, &$form_state){
+  $values = array();
+  foreach($form_state['values'] as $field => $value){
+    if(strstr($field, 'os2intra_mapping')){
+      // If none is selected, throw error
+      if($value == 'none'){
+        form_set_error($field, t('Invalid selection'));
+      }
+      // If same column is selected twice throw error
+      if(in_array($value, $values)){
+        form_set_error($field, t('Cannot use column twice'));
+      }
+
+      $values[] = $value;
+    }
+  }
 }
 
 /**
@@ -213,7 +288,7 @@ function os2intra_user_import_overview(){
  * User import wrapper function
  */
 function os2intra_user_import_run(){
-  if(variable_get('os2intra_user_import_enable', TRUE)){
+  if(variable_get('os2intra_user_import_enable', FALSE)){
 
     variable_get('os2intra_user_import_dir', 'private://user_import');
 
@@ -223,10 +298,11 @@ function os2intra_user_import_run(){
     if($dir){
       $realpath = drupal_realpath($dir->uri);
     }
-    
+
     if(file_exists($realpath)){
       $file = file_get_contents($realpath);
 
+      os2intra_user_import_clear_log();
       os2intra_user_import_save_log('', 'Starting import');
       $users = os2intra_user_import_process_file($file);
 
@@ -235,7 +311,6 @@ function os2intra_user_import_run(){
 
       // Check for duplicates
       $update_users = os2intra_user_import_check_users($users);
-
 
       os2intra_user_import_save_log('', 'User import');
       // Loop over users and create
@@ -289,22 +364,17 @@ function os2intra_user_import_disable_users(){
  * Helper function to parse file contents to array with relevant info
  */
 function os2intra_user_import_process_file($file){
-  $data = str_getcsv($file, "\n"); //parse the rows 
+  $data = str_getcsv($file, "\n"); //parse the rows
 
   // CSV field mapping
   // rewrite for settings page?
   $map = array(
-    0 => 'employee_id',
-    1 => 'first_name',
-    2 => 'last_name',
-    3 => 'department',
-    4 => 'job_description',
-    5 => 'job_short_name',
-    6 => 'hire_date',
-    7 => 'termination_date',
-    8 => 'Decentra adm enh',
-    9 => 'Org placering',
-    10 => 'change_date',
+    variable_get('os2intra_mapping_employee_id') => 'employee_id',
+    variable_get('os2intra_mapping_first_name') => 'first_name',
+    variable_get('os2intra_mapping_last_name') => 'last_name',
+    variable_get('os2intra_mapping_department') => 'department',
+    variable_get('os2intra_mapping_job_description') => 'job_description',
+    variable_get('os2intra_mapping_termination_date') => 'termination_date',
   );
 
   // Load data from file
@@ -313,12 +383,15 @@ function os2intra_user_import_process_file($file){
 
     // Parse mapping
     foreach($row as $key => $field){
-      $row[$map[$key]] = $field;
-      unset($row[$key]);
+      // If there is a mapping for the key
+      if($map[$key]){
+        $mapped_row[$map[$key]] = $field;
+      }
     }
-    $rows[] = $row;
+    $rows[] = $mapped_row;
   }
 
+  // Skip first row, headers
   unset($rows[0]);
 
   return $rows;
@@ -539,6 +612,22 @@ function os2intra_user_import_save_log($uuid, $message){
     return false;
   }
 }
+
+/**
+ * Clear log
+ */
+function os2intra_user_import_clear_log(){
+  try {
+    db_query('DELETE FROM {os2intra_user_import_log} WHERE 1')->execute();
+    return true;
+
+  }
+  catch (PDOException $e ) {
+    return false;
+  }
+}
+
+
 
 /**
  * Helper for user title
