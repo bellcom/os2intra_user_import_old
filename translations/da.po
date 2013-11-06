@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "POT-Creation-Date: 2013-11-06 08:38+0100\n"
-"PO-Revision-Date: 2013-11-06 08:50+0100\n"
+"PO-Revision-Date: 2013-11-06 12:51+0100\n"
 "Last-Translator: Thomas Thune Hansen <tth@bellcom.dk>\n"
 "Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
 "MIME-Version: 1.0\n"
@@ -223,7 +223,7 @@ msgstr "Kolonnen kan ikke bruges 2 gange"
 
 #: os2intra_user_import.module:252
 msgid "Activate user"
-msgstr ""
+msgstr "Aktiver bruger"
 
 #: os2intra_user_import.module:275
 msgid "Message"
