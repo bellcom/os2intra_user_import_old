@@ -490,7 +490,7 @@ function os2intra_user_import_save_user($user, $uid = ''){
     // Get users current department id
     $department_ref = $account->field_os2intra_department_ref[LANGUAGE_NONE][0]['target_id'];
 
-    $user_groups = $account->og_user_node;
+    array_merge($user_groups, $account->og_user_node);
   }
 
   // Get node id for group
