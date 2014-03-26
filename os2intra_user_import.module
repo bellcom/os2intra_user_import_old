@@ -514,7 +514,7 @@ function os2intra_user_import_save_user($user, $uid = ''){
     $termination_date_timestamp = 1;
   }
 
-  list($dd,$mm,$yyyy) = explode('/', $user['birthday']);
+  list($mm,$dd,$yyyy) = explode('/', $user['birthday']);
   $birthday = date('Y-m-d H:i:s', mktime(0, 0, 0, (int)$mm, (int)$dd, (int)$yyyy));
   // User title tid
   $title_tid = os2intra_user_import_user_title($user['job_description']);
