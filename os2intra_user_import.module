@@ -338,12 +338,13 @@ function os2intra_user_import_run(){
 
       os2intra_user_import_clear_log();
       os2intra_user_import_save_log('', 'Starting import');
+      // Parse file, map data accordingly
       $users = os2intra_user_import_process_file($file);
 
       // Check and create groups
       os2intra_user_import_groups($users);
 
-      // Check for duplicates
+      // Check for users that already exist
       $update_users = os2intra_user_import_check_users($users);
 
       os2intra_user_import_save_log('', 'User import');
@@ -468,6 +469,22 @@ function os2intra_user_import_check_users(&$users){
  *  user array from file parser
  */
 function os2intra_user_import_save_user($user, $uid = ''){
+  // Load users account, if any
+  $account = user_load($uid);
+
+  // Empty values
+  $department_ref = 0;
+  $user_groups = array();
+  $user_groups[LANGUAGE_NONE][]['target_id'] = 2;
+
+  // Load users values from account
+  if(is_object($account)){
+    // Get users current department id
+    $department_ref = $account->field_os2intra_department_ref[LANGUAGE_NONE][0]['target_id'];
+
+    $user_groups = $account->og_user_node;
+  }
+
   // Get node id for group
   $query = new EntityFieldQuery;
   $query->entityCondition('entity_type', 'node');
@@ -475,9 +492,24 @@ function os2intra_user_import_save_user($user, $uid = ''){
   $result = $query->execute();
   $group_nid = key(array_shift($result));
 
+  // If the department ref is different from the group_nid,
+  // the users has switched department.
+  if((int)$group_nid !== (int)$department_ref){
+    // Loop through the users groups and unset the old department.
+    foreach($user_groups[LANGUAGE_NONE] as $key => $user_group){
+      if($department_ref == $user_group['target_id']){
+        unset($user_groups[LANGUAGE_NONE][$key]);
+      }
+    }
+    // Attach new group.
+    $user_groups[LANGUAGE_NONE][]['target_id'] = $group_nid;
+  }
+
   // Create unix timestamp for termination date
   // @todo: check that timestamp is not today
   $termination_date_timestamp = strtotime($user['termination_date']);
+  // Check if the timestamp supplied from the import is larger than
+  // what unix timestamps can be.
   if($termination_date_timestamp > 2147483647){
     $termination_date_timestamp = 1;
   }
@@ -492,7 +524,9 @@ function os2intra_user_import_save_user($user, $uid = ''){
     // Set employee_id
     'field_os2intra_employee_id' => array(LANGUAGE_NONE => array(0 => array('value' => $user['employee_id']))),
     // Set group membership
-    'og_user_node' => array(LANGUAGE_NONE => array(array('target_id' => 2),array('target_id' => $group_nid))),
+    'og_user_node' => $user_groups,
+    // As well as department from import
+    'field_os2intra_department_ref' => array(LANGUAGE_NONE => array(0 => array('target_id' => $group_nid))),
     // First Name
     'field_name_first' => array(LANGUAGE_NONE => array(0 => array('value' => $user['first_name']))),
     // Last Name
@@ -534,7 +568,7 @@ function os2intra_user_import_save_user($user, $uid = ''){
   }
 
   // Save user
-  $account = user_save(user_load($uid), $fields);
+  user_save($account, $fields);
 
   // Write log entry
   if($uid){
@@ -633,7 +667,6 @@ function os2intra_user_import_groups($users){
  * Save log message to db
  */
 function os2intra_user_import_save_log($uuid, $message){
-  error_log(__FILE__.':'.__LINE__.' '.$message); // tth@bellcom.dk debugging
   try {
     db_insert('os2intra_user_import_log')
       ->fields(array(
@@ -664,8 +697,6 @@ function os2intra_user_import_clear_log(){
     return false;
   }
 }
-
-
 
 /**
  * Helper for user title
