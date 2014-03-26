@@ -94,11 +94,11 @@ function os2intra_user_import_activate_form_validate($form, &$form_state){
   }
 
   // Check if employee id is valid
-  $employee_id = $form_state['values']['employee_id'];
+  $employee_id = (int)$form_state['values']['employee_id'];
 
   $query = new EntityFieldQuery;
   $query->entityCondition('entity_type', 'user');
-  $query->fieldCondition('field_os2intra_employee_id', 'value', $employee_id, '=');
+  $query->fieldCondition('field_os2intra_employee_id', 'value', $employee_id, 'LIKE');
   $result = array_shift($query->execute());
 
   if(!$result){
@@ -223,6 +223,13 @@ function os2intra_user_import_settings(){
     '#title' => t('Department'),
     '#options' => $csv_cols,
     '#default_value' => variable_get('os2intra_mapping_department'),
+  );
+
+  $form['mapping']['os2intra_mapping_centre'] = array(
+    '#type' => 'select',
+    '#title' => t('Centre'),
+    '#options' => $csv_cols,
+    '#default_value' => variable_get('os2intra_mapping_centre'),
   );
 
   $form['mapping']['os2intra_mapping_employee_id'] = array(
@@ -409,6 +416,7 @@ function os2intra_user_import_process_file($file){
     variable_get('os2intra_mapping_first_name') => 'first_name',
     variable_get('os2intra_mapping_last_name') => 'last_name',
     variable_get('os2intra_mapping_department') => 'department',
+    variable_get('os2intra_mapping_centre') => 'centre',
     variable_get('os2intra_mapping_job_description') => 'job_description',
     variable_get('os2intra_mapping_termination_date') => 'termination_date',
     variable_get('os2intra_mapping_birthday') => 'birthday',
@@ -504,6 +512,17 @@ function os2intra_user_import_save_user($user, $uid = ''){
     // Attach new group.
     $user_groups[LANGUAGE_NONE][]['target_id'] = $group_nid;
   }
+
+  // Get node id for centre
+  $query = new EntityFieldQuery;
+  $query->entityCondition('entity_type', 'node');
+  $query->fieldCondition('field_os2intra_department_id', 'value', $user['centre'], '=');
+  $result = $query->execute();
+  if($result){
+    $centre_nid = key(array_shift($result));
+    $user_groups[LANGUAGE_NONE][]['target_id'] = $centre_nid;
+  }
+
 
   // Create unix timestamp for termination date
   // @todo: check that timestamp is not today
