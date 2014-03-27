@@ -513,6 +513,10 @@ function os2intra_user_import_save_user($user, $uid = ''){
     $user_groups[LANGUAGE_NONE][]['target_id'] = $group_nid;
   }
 
+  $user_groups = array();
+  $user_groups[LANGUAGE_NONE][]['target_id'] = $group_nid;
+  $user_groups[LANGUAGE_NONE][]['target_id'] = 2;
+
   // Get node id for centre
   $query = new EntityFieldQuery;
   $query->entityCondition('entity_type', 'node');
@@ -522,7 +526,6 @@ function os2intra_user_import_save_user($user, $uid = ''){
     $centre_nid = key(array_shift($result));
     $user_groups[LANGUAGE_NONE][]['target_id'] = $centre_nid;
   }
-
 
   // Create unix timestamp for termination date
   // @todo: check that timestamp is not today
