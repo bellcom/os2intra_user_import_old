@@ -330,6 +330,7 @@ function os2intra_user_import_overview(){
  */
 function os2intra_user_import_run(){
   if(variable_get('os2intra_user_import_enable', FALSE)){
+    setlocale(LC_ALL, "en_DK.UTF-8");  
 
     variable_get('os2intra_user_import_dir', 'private://user_import');
 
@@ -438,7 +439,6 @@ function os2intra_user_import_process_file($file){
 
   // Skip first row, headers
   unset($rows[0]);
-
   return $rows;
 }
 
