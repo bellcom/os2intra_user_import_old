@@ -10,110 +10,51 @@
 function os2intra_user_import_field_default_field_instances() {
   $field_instances = array();
 
-  // Exported field_instance: 'node-group-field_os2intra_department_id'
-  $field_instances['node-group-field_os2intra_department_id'] = array(
-    'bundle' => 'group',
+  // Exported field_instance: 'user-user-field_import_groups'
+  $field_instances['user-user-field_import_groups'] = array(
+    'bundle' => 'user',
     'default_value' => NULL,
+    'default_value_function' => '',
     'deleted' => 0,
     'description' => '',
     'display' => array(
       'default' => array(
         'label' => 'above',
-        'settings' => array(),
-        'type' => 'hidden',
-        'weight' => 3,
+        'module' => 'entityreference',
+        'settings' => array(
+          'link' => FALSE,
+        ),
+        'type' => 'entityreference_label',
+        'weight' => 20,
       ),
-      'teaser' => array(
+      'search_results' => array(
         'label' => 'above',
         'settings' => array(),
         'type' => 'hidden',
         'weight' => 0,
       ),
     ),
-    'entity_type' => 'node',
-    'field_name' => 'field_os2intra_department_id',
-    'label' => 'Afdeling',
+    'display_in_partial_form' => 0,
+    'entity_type' => 'user',
+    'field_name' => 'field_import_groups',
+    'label' => 'import groups',
     'required' => 0,
     'settings' => array(
-      'better_formats' => array(
-        'allowed_formats' => array(
-          'blokindhold' => 'blokindhold',
-          'filtered_html' => 'filtered_html',
-          'full_html' => 'full_html',
-          'plain_text' => 'plain_text',
-          'raw' => 'raw',
-        ),
-        'allowed_formats_toggle' => 0,
-        'default_order_toggle' => 0,
-        'default_order_wrapper' => array(
-          'formats' => array(
-            'blokindhold' => array(
-              'weight' => -7,
-            ),
-            'filtered_html' => array(
-              'weight' => 0,
-            ),
-            'full_html' => array(
-              'weight' => 1,
-            ),
-            'plain_text' => array(
-              'weight' => -8,
-            ),
-            'raw' => array(
-              'weight' => 0,
-            ),
-          ),
+      'behaviors' => array(
+        'prepopulate' => array(
+          'status' => 0,
         ),
       ),
-      'linkit' => array(
-        'button_text' => 'Search',
-        'enable' => 0,
-        'profile' => '',
-      ),
-      'text_processing' => 0,
-      'user_register_form' => FALSE,
+      'user_register_form' => 0,
     ),
     'widget' => array(
       'active' => 1,
-      'module' => 'text',
+      'module' => 'options',
       'settings' => array(
-        'size' => 60,
+        'content_taxonomy_opt_groups' => FALSE,
       ),
-      'type' => 'text_textfield',
-      'weight' => 16,
-    ),
-  );
-
-  // Exported field_instance: 'taxonomy_term-os2intra_organizaiton_tax-field_os2intra_department_id'
-  $field_instances['taxonomy_term-os2intra_organizaiton_tax-field_os2intra_department_id'] = array(
-    'bundle' => 'os2intra_organizaiton_tax',
-    'default_value' => NULL,
-    'deleted' => 0,
-    'description' => '',
-    'display' => array(
-      'default' => array(
-        'label' => 'above',
-        'module' => 'text',
-        'settings' => array(),
-        'type' => 'text_default',
-        'weight' => 0,
-      ),
-    ),
-    'entity_type' => 'taxonomy_term',
-    'field_name' => 'field_os2intra_department_id',
-    'label' => 'Afdeling',
-    'required' => FALSE,
-    'settings' => array(
-      'text_processing' => 0,
-      'user_register_form' => FALSE,
-    ),
-    'widget' => array(
-      'module' => 'text',
-      'settings' => array(
-        'size' => 60,
-      ),
-      'type' => 'text_textfield',
-      'weight' => 41,
+      'type' => 'options_select',
+      'weight' => 23,
     ),
   );
 
@@ -125,24 +66,63 @@ function os2intra_user_import_field_default_field_instances() {
     'description' => '',
     'display' => array(
       'default' => array(
-        'label' => 'above',
-        'module' => 'text',
+        'label' => 'hidden',
         'settings' => array(),
-        'type' => 'text_default',
-        'weight' => 1,
+        'type' => 'hidden',
+        'weight' => 18,
       ),
       'search_results' => array(
         'label' => 'above',
         'settings' => array(),
         'type' => 'hidden',
-        'weight' => 0,
+        'weight' => 10,
       ),
     ),
+    'display_in_partial_form' => 0,
     'entity_type' => 'user',
     'field_name' => 'field_os2intra_employee_id',
-    'label' => 'os2intra_employee_id',
+    'label' => 'MedarbejderID',
     'required' => 0,
     'settings' => array(
+      'better_formats' => array(
+        'allowed_formats' => array(
+          'blokindhold' => 'blokindhold',
+          'filtered_html' => 'filtered_html',
+          'full_html' => 'full_html',
+          'php_code' => 'php_code',
+          'plain_text' => 'plain_text',
+          'raw' => 'raw',
+        ),
+        'allowed_formats_toggle' => 0,
+        'default_order_toggle' => 0,
+        'default_order_wrapper' => array(
+          'formats' => array(
+            'blokindhold' => array(
+              'weight' => -8,
+            ),
+            'filtered_html' => array(
+              'weight' => -10,
+            ),
+            'full_html' => array(
+              'weight' => -5,
+            ),
+            'php_code' => array(
+              'weight' => -7,
+            ),
+            'plain_text' => array(
+              'weight' => -9,
+            ),
+            'raw' => array(
+              'weight' => -6,
+            ),
+          ),
+        ),
+      ),
+      'linkit' => array(
+        'button_text' => 'Search',
+        'enable' => 0,
+        'profile' => '',
+      ),
       'text_processing' => 0,
       'user_register_form' => 0,
     ),
@@ -165,22 +145,15 @@ function os2intra_user_import_field_default_field_instances() {
     'display' => array(
       'default' => array(
         'label' => 'above',
-        'module' => 'date',
-        'settings' => array(
-          'format_type' => 'long',
-          'fromto' => 'both',
-          'multiple_from' => '',
-          'multiple_number' => '',
-          'multiple_to' => '',
-        ),
-        'type' => 'date_default',
-        'weight' => 22,
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 15,
       ),
       'search_results' => array(
         'label' => 'above',
         'settings' => array(),
         'type' => 'hidden',
-        'weight' => 0,
+        'weight' => 9,
       ),
     ),
     'display_in_partial_form' => 0,
@@ -213,8 +186,8 @@ function os2intra_user_import_field_default_field_instances() {
 
   // Translatables
   // Included for use with string extractors like potx.
-  t('Afdeling');
-  t('os2intra_employee_id');
+  t('MedarbejderID');
+  t('import groups');
   t('os2intra_termination_date');
 
   return $field_instances;

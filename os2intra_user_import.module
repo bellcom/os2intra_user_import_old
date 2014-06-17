@@ -58,6 +58,9 @@ function os2intra_user_import_menu(){
   return $items;
 }
 
+/**
+ * User activation form
+ */
 function os2intra_user_import_activate_form($form_state){
   $form['employee_id'] = array(
     '#type' => 'textfield',
@@ -125,9 +128,6 @@ function os2intra_user_import_activate_form_validate($form, &$form_state){
   if(!valid_email_address($form_state['values']['mail'])){
     form_set_error('mail', t('Invalid email address.'));
   }
- 
-
-
 }
 
 /**
@@ -330,7 +330,7 @@ function os2intra_user_import_overview(){
  */
 function os2intra_user_import_run(){
   if(variable_get('os2intra_user_import_enable', FALSE)){
-    setlocale(LC_ALL, "en_DK.UTF-8");  
+    setlocale(LC_ALL, "en_DK.UTF-8");
 
     variable_get('os2intra_user_import_dir', 'private://user_import');
 
@@ -472,25 +472,40 @@ function os2intra_user_import_check_users(&$users){
 }
 
 /**
- * Create user
+ * Create/update user
+ * If a uid is sent the user will be updated, otherwise a new user will be created.
+ * The user has multiple group connections, some ar form the import file, and some
+ * are set manually in the system. In order to preserve the manually set groups we
+ * save the imported values in field_os2intra_import_groups, we then diff this
+ * field with og_user_node to find out what groups are set manually (the diff).
+ * These are then readded to the users groups, along with the organisational groups
+ * from the import file.
+ * Group id 2 (Odsherred kommune) is a different story, all users should be
+ * members of this group, and therefore we add it manually to all.
+ *
+ * @author Thomas Thune Hansen <tth@bellcom.dk>
  * @param
  *  user array from file parser
+ *
  */
 function os2intra_user_import_save_user($user, $uid = ''){
   // Load users account, if any
   $account = user_load($uid);
 
-  // Empty values
-  $department_ref = 0;
-  $user_groups = array();
-  $user_groups[LANGUAGE_NONE][]['target_id'] = 2;
-
   // Load users values from account
   if(is_object($account)){
-    // Get users current department id
-    $department_ref = $account->field_os2intra_department_ref[LANGUAGE_NONE][0]['target_id'];
-
-    array_merge($user_groups, $account->og_user_node);
+    // Get a list of current group nids
+    foreach ($account->og_user_node[LANGUAGE_NONE] as $key => $field) {
+      $og_user_node[$field['target_id']] = $field['target_id'];
+    }
+    // And organisation and centre nid from last import
+    foreach ($account->field_os2intra_import_groups[LANGUAGE_NONE] as $key => $field) {
+      $field_os2intra_import_groups[$field['target_id']] = $field['target_id'];
+    }
+    // The diff will be the groups the user should keep.
+    $keep_groups = array_diff($og_user_node, $field_os2intra_import_groups);
+    // Group id 2 is unset as we add this to all users later.
+    unset($keep_groups[2]);
   }
 
   // Get node id for group
@@ -498,33 +513,36 @@ function os2intra_user_import_save_user($user, $uid = ''){
   $query->entityCondition('entity_type', 'node');
   $query->fieldCondition('field_os2intra_department_id', 'value', $user['department'], '=');
   $result = $query->execute();
-  $group_nid = key(array_shift($result));
+  $new_group_nid = key(array_shift($result));
 
-  // If the department ref is different from the group_nid,
-  // the users has switched department.
-  if((int)$group_nid !== (int)$department_ref){
-    // Loop through the users groups and unset the old department.
-    foreach($user_groups[LANGUAGE_NONE] as $key => $user_group){
-      if($department_ref == $user_group['target_id']){
-        unset($user_groups[LANGUAGE_NONE][$key]);
-      }
-    }
-    // Attach new group.
-    $user_groups[LANGUAGE_NONE][]['target_id'] = $group_nid;
-  }
-
+  // Attach new group.
+  // We rebuild the association completely so we start with an empty
+  // array.
   $user_groups = array();
-  $user_groups[LANGUAGE_NONE][]['target_id'] = $group_nid;
-  $user_groups[LANGUAGE_NONE][]['target_id'] = 2;
+  $user_groups[LANGUAGE_NONE][]['target_id'] = 2; // Everybody needs to memebers of this group.
+  $user_groups[LANGUAGE_NONE][]['target_id'] = $new_group_nid;
+
+  // In field_os2intra_import_groups we store the group ids
+  // imported, for both organistation unit and center.
+  // On the next import, we need this to find out what groups the
+  // user has been added to, that are not organisational.
+  $import_groups = array();
+  $import_groups[LANGUAGE_NONE][]['target_id'] = $new_group_nid;
 
   // Get node id for centre
   $query = new EntityFieldQuery;
   $query->entityCondition('entity_type', 'node');
   $query->fieldCondition('field_os2intra_department_id', 'value', $user['centre'], '=');
   $result = $query->execute();
-  if($result){
+  if (!empty($result['node'])) {
     $centre_nid = key(array_shift($result));
     $user_groups[LANGUAGE_NONE][]['target_id'] = $centre_nid;
+    $import_groups[LANGUAGE_NONE][]['target_id'] = $centre_nid;
+  }
+
+  // Add back the groups we want to keep.
+  foreach ($keep_groups as $group_id) {
+    $user_groups[LANGUAGE_NONE][]['target_id'] = $group_id;
   }
 
   // Create unix timestamp for termination date
@@ -547,8 +565,8 @@ function os2intra_user_import_save_user($user, $uid = ''){
     'field_os2intra_employee_id' => array(LANGUAGE_NONE => array(0 => array('value' => $user['employee_id']))),
     // Set group membership
     'og_user_node' => $user_groups,
-    // As well as department from import
-    'field_os2intra_department_ref' => array(LANGUAGE_NONE => array(0 => array('target_id' => $group_nid))),
+    // The organisational ids from this import
+    'field_os2intra_import_groups' => $import_groups,
     // First Name
     'field_name_first' => array(LANGUAGE_NONE => array(0 => array('value' => $user['first_name']))),
     // Last Name

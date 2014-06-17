@@ -215,7 +215,7 @@ function os2intra_user_import_views_default_views() {
       'label' => '',
     ),
   );
-  /* Felt: Bruger: os2intra_employee_id */
+  /* Felt: Bruger: MedarbejderID */
   $handler->display->display_options['fields']['field_os2intra_employee_id']['id'] = 'field_os2intra_employee_id';
   $handler->display->display_options['fields']['field_os2intra_employee_id']['table'] = 'field_data_field_os2intra_employee_id';
   $handler->display->display_options['fields']['field_os2intra_employee_id']['field'] = 'field_os2intra_employee_id';
@@ -269,7 +269,7 @@ function os2intra_user_import_views_default_views() {
   $handler->display->display_options['sorts']['created']['table'] = 'users';
   $handler->display->display_options['sorts']['created']['field'] = 'created';
   $handler->display->display_options['sorts']['created']['order'] = 'DESC';
-  /* Filterkriterie: Bruger: os2intra_employee_id (field_os2intra_employee_id) */
+  /* Filterkriterie: Bruger: MedarbejderID (field_os2intra_employee_id) */
   $handler->display->display_options['filters']['field_os2intra_employee_id_value']['id'] = 'field_os2intra_employee_id_value';
   $handler->display->display_options['filters']['field_os2intra_employee_id_value']['table'] = 'field_data_field_os2intra_employee_id';
   $handler->display->display_options['filters']['field_os2intra_employee_id_value']['field'] = 'field_os2intra_employee_id_value';
@@ -300,7 +300,7 @@ function os2intra_user_import_views_default_views() {
     11 => 0,
     12 => 0,
   );
-  /* Filterkriterie: Bruger: os2intra_employee_id (field_os2intra_employee_id) */
+  /* Filterkriterie: Bruger: MedarbejderID (field_os2intra_employee_id) */
   $handler->display->display_options['filters']['field_os2intra_employee_id_value_1']['id'] = 'field_os2intra_employee_id_value_1';
   $handler->display->display_options['filters']['field_os2intra_employee_id_value_1']['table'] = 'field_data_field_os2intra_employee_id';
   $handler->display->display_options['filters']['field_os2intra_employee_id_value_1']['field'] = 'field_os2intra_employee_id_value';

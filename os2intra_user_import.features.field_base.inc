@@ -10,33 +10,47 @@
 function os2intra_user_import_field_default_field_bases() {
   $field_bases = array();
 
-  // Exported field_base: 'field_os2intra_department_id'
-  $field_bases['field_os2intra_department_id'] = array(
+  // Exported field_base: 'field_import_groups'
+  $field_bases['field_import_groups'] = array(
     'active' => 1,
-    'cardinality' => 1,
+    'cardinality' => -1,
     'deleted' => 0,
     'entity_types' => array(),
-    'field_name' => 'field_os2intra_department_id',
+    'field_name' => 'field_import_groups',
     'foreign keys' => array(
-      'format' => array(
+      'node' => array(
         'columns' => array(
-          'format' => 'format',
+          'target_id' => 'nid',
         ),
-        'table' => 'filter_format',
+        'table' => 'node',
       ),
     ),
     'indexes' => array(
-      'format' => array(
-        0 => 'format',
+      'target_id' => array(
+        0 => 'target_id',
       ),
     ),
     'locked' => 0,
-    'module' => 'text',
+    'module' => 'entityreference',
     'settings' => array(
-      'max_length' => 255,
+      'handler' => 'base',
+      'handler_settings' => array(
+        'behaviors' => array(
+          'views-select-list' => array(
+            'status' => 0,
+          ),
+        ),
+        'sort' => array(
+          'type' => 'none',
+        ),
+        'target_bundles' => array(
+          'group' => 'group',
+        ),
+      ),
+      'target_type' => 'node',
     ),
     'translatable' => 0,
-    'type' => 'text',
+    'type' => 'entityreference',
   );
 
   // Exported field_base: 'field_os2intra_employee_id'
