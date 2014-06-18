@@ -507,6 +507,7 @@ function os2intra_user_import_save_user($user, $uid = ''){
   $account = user_load($uid);
 
   $keep_groups = array();
+  $no_import_groups = FALSE;
   // Load users values from account
   if(is_object($account)){
     $og_user_node = array();
@@ -528,6 +529,11 @@ function os2intra_user_import_save_user($user, $uid = ''){
       $keep_groups = array_diff($og_user_node, $import_groups);
       // Group id 2 is unset as we add this to all users later.
       unset($keep_groups[2]);
+    }
+    else {
+      // Keep all groups, if there are no import groups
+      $keep_groups = $og_user_node;
+      $no_import_groups = TRUE;
     }
   }
 
@@ -560,7 +566,19 @@ function os2intra_user_import_save_user($user, $uid = ''){
   if (!empty($result['node'])) {
     $centre_nid = key(array_shift($result));
     $user_groups[LANGUAGE_NONE][]['target_id'] = $centre_nid;
-    $import_groups[LANGUAGE_NONE][]['target_id'] = $centre_nid;
+    // Dont do duplicates
+    if ($new_group_nid !== $centre_nid) {
+      $import_groups[LANGUAGE_NONE][]['target_id'] = $centre_nid;
+    }
+  }
+
+  // If there are no import groups, we add the groups, the user had at import.
+  // import groups will be set during this import, so next time, this should
+  // not be an issue.
+  // This is only done in order to migrate user groups, from users before the
+  // import groups field was added.
+  if ($no_import_groups) {
+    $user_groups = array();
   }
 
   // Add back the groups we want to keep.
@@ -577,6 +595,12 @@ function os2intra_user_import_save_user($user, $uid = ''){
     $termination_date_timestamp = 1;
   }
 
+  if (count($user_groups[LANGUAGE_NONE] > 3)){
+    error_log(__FILE__.':'.__LINE__. print_r($user_groups, 1)); // tth@bellcom.dk debugging
+  }
+  error_log(__FILE__.':'.__LINE__. print_r($import_groups, 1)); // tth@bellcom.dk debugging
+
+  return;
   list($mm,$dd,$yyyy) = explode('/', $user['birthday']);
   $birthday = date('Y-m-d H:i:s', mktime(0, 0, 0, (int)$mm, (int)$dd, (int)$yyyy));
   // User title tid
