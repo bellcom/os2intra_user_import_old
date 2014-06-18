@@ -59,6 +59,20 @@ function os2intra_user_import_menu(){
 }
 
 /**
+ * Implements hook_form_alter().
+ */
+function os2intra_user_import_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'edit_profile_user_profile_form') {
+    if (!user_access('administer os2intra user import')) {
+      $form['field_os2intra_import_groups']['#access'] = 0;
+      $form['field_os2intra_employee_id']['#access'] = 0;
+      $form['field_os2intra_termination_date']['#access'] = 0;
+      $form['field_os2intra_department_ref']['#access'] = 0;
+    }
+  }
+}
+
+/**
  * User activation form
  */
 function os2intra_user_import_activate_form($form_state){
@@ -492,20 +506,29 @@ function os2intra_user_import_save_user($user, $uid = ''){
   // Load users account, if any
   $account = user_load($uid);
 
+  $keep_groups = array();
   // Load users values from account
   if(is_object($account)){
+    $og_user_node = array();
+    $import_groups = array();
     // Get a list of current group nids
-    foreach ($account->og_user_node[LANGUAGE_NONE] as $key => $field) {
-      $og_user_node[$field['target_id']] = $field['target_id'];
+    if ($og_user_node_field = field_get_items('user', $account, 'og_user_node')) {
+      foreach ($og_user_node_field as $key => $field) {
+        $og_user_node[$field['target_id']] = $field['target_id'];
+      }
     }
     // And organisation and centre nid from last import
-    foreach ($account->field_os2intra_import_groups[LANGUAGE_NONE] as $key => $field) {
-      $field_os2intra_import_groups[$field['target_id']] = $field['target_id'];
+    if ($import_group_field = field_get_items('user', $account, 'field_os2intra_import_groups')) {
+      foreach ($import_group_field as $key => $field) {
+        $import_groups[$field['target_id']] = $field['target_id'];
+      }
     }
     // The diff will be the groups the user should keep.
-    $keep_groups = array_diff($og_user_node, $field_os2intra_import_groups);
-    // Group id 2 is unset as we add this to all users later.
-    unset($keep_groups[2]);
+    if (!empty($import_groups)) {
+      $keep_groups = array_diff($og_user_node, $import_groups);
+      // Group id 2 is unset as we add this to all users later.
+      unset($keep_groups[2]);
+    }
   }
 
   // Get node id for group

@@ -11,7 +11,7 @@ function os2intra_user_import_field_default_field_instances() {
   $field_instances = array();
 
   // Exported field_instance: 'user-user-field_import_groups'
-  $field_instances['user-user-field_import_groups'] = array(
+  $field_instances['user-user-field_os2intra_import_groups'] = array(
     'bundle' => 'user',
     'default_value' => NULL,
     'default_value_function' => '',
@@ -36,7 +36,7 @@ function os2intra_user_import_field_default_field_instances() {
     ),
     'display_in_partial_form' => 0,
     'entity_type' => 'user',
-    'field_name' => 'field_import_groups',
+    'field_name' => 'field_os2intra_import_groups',
     'label' => 'import groups',
     'required' => 0,
     'settings' => array(

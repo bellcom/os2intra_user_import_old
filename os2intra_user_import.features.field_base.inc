@@ -10,13 +10,13 @@
 function os2intra_user_import_field_default_field_bases() {
   $field_bases = array();
 
-  // Exported field_base: 'field_import_groups'
-  $field_bases['field_import_groups'] = array(
+  // Exported field_base: 'field_os2intra_import_groups'
+  $field_bases['field_os2intra_import_groups'] = array(
     'active' => 1,
     'cardinality' => -1,
     'deleted' => 0,
     'entity_types' => array(),
-    'field_name' => 'field_import_groups',
+    'field_name' => 'field_os2intra_import_groups',
     'foreign keys' => array(
       'node' => array(
         'columns' => array(
