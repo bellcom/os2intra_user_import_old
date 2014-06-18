@@ -595,12 +595,6 @@ function os2intra_user_import_save_user($user, $uid = ''){
     $termination_date_timestamp = 1;
   }
 
-  if (count($user_groups[LANGUAGE_NONE] > 3)){
-    error_log(__FILE__.':'.__LINE__. print_r($user_groups, 1)); // tth@bellcom.dk debugging
-  }
-  error_log(__FILE__.':'.__LINE__. print_r($import_groups, 1)); // tth@bellcom.dk debugging
-
-  return;
   list($mm,$dd,$yyyy) = explode('/', $user['birthday']);
   $birthday = date('Y-m-d H:i:s', mktime(0, 0, 0, (int)$mm, (int)$dd, (int)$yyyy));
   // User title tid
